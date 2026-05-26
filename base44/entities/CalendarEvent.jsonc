@@ -1,0 +1,54 @@
+{
+  "name": "CalendarEvent",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "day_offset": {
+      "type": "number"
+    },
+    "start_hour": {
+      "type": "number"
+    },
+    "start_min": {
+      "type": "number"
+    },
+    "duration_mins": {
+      "type": "number"
+    },
+    "cal_type": {
+      "type": "string",
+      "enum": [
+        "work",
+        "family",
+        "block",
+        "manual"
+      ],
+      "default": "manual"
+    },
+    "location": {
+      "type": "string"
+    },
+    "attendees": {
+      "type": "string"
+    },
+    "html_link": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "ignored": {
+      "type": "boolean",
+      "default": false
+    },
+    "raw_start": {
+      "type": "string",
+      "description": "YYYY-MM-DD string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

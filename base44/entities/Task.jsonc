@@ -1,0 +1,113 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "pillar_id": {
+      "type": "string"
+    },
+    "sub_pillar": {
+      "type": "string"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "High",
+        "Medium",
+        "Low"
+      ],
+      "default": "Medium"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "upcoming",
+        "parked"
+      ],
+      "default": "active"
+    },
+    "duration_mins": {
+      "type": "number"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "scheduled": {
+      "type": "boolean",
+      "default": false
+    },
+    "day_offset": {
+      "type": "number"
+    },
+    "start_hour": {
+      "type": "number"
+    },
+    "start_min": {
+      "type": "number"
+    },
+    "done": {
+      "type": "boolean",
+      "default": false
+    },
+    "done_at": {
+      "type": "string"
+    },
+    "postpone_count": {
+      "type": "number",
+      "default": 0
+    },
+    "blocker_surfaced": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_recurring": {
+      "type": "boolean",
+      "default": false
+    },
+    "recurring_type": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekday",
+        "weekly",
+        "weekend"
+      ]
+    },
+    "recurring_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "recurring_start_hour": {
+      "type": "number"
+    },
+    "recurring_start_min": {
+      "type": "number"
+    },
+    "recurring_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "recurring_exceptions": {
+      "type": "object"
+    },
+    "archived": {
+      "type": "boolean",
+      "default": false
+    },
+    "archived_at": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

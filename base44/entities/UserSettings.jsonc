@@ -1,0 +1,27 @@
+{
+  "name": "UserSettings",
+  "type": "object",
+  "properties": {
+    "theme": {
+      "type": "string",
+      "enum": [
+        "dark",
+        "light"
+      ],
+      "default": "dark"
+    },
+    "energy_rhythm": {
+      "type": "object",
+      "description": "Energy levels for morning, midday, afternoon, evening, night"
+    },
+    "compass_memory": {
+      "type": "object",
+      "description": "Stated priorities, last week review, last updated"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": []
+}

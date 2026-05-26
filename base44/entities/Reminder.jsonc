@@ -1,0 +1,66 @@
+{
+  "name": "Reminder",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "day_offset": {
+      "type": "number"
+    },
+    "start_hour": {
+      "type": "number"
+    },
+    "start_min": {
+      "type": "number"
+    },
+    "block_time": {
+      "type": "boolean",
+      "default": false
+    },
+    "duration_mins": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "is_recurring": {
+      "type": "boolean",
+      "default": false
+    },
+    "recurring_type": {
+      "type": "string",
+      "enum": [
+        "daily",
+        "weekday",
+        "weekly",
+        "weekend"
+      ]
+    },
+    "recurring_days": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      }
+    },
+    "recurring_start_hour": {
+      "type": "number"
+    },
+    "recurring_start_min": {
+      "type": "number"
+    },
+    "recurring_end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "done_dates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
