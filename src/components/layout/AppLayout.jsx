@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import TopBar from './TopBar';
+import Sidebar from './Sidebar';
 import AddModal from '../modals/AddModal';
 import ArchiveModal from '../modals/ArchiveModal';
 import EnergyModal from '../modals/EnergyModal';
@@ -8,7 +9,10 @@ import IgnoredModal from '../modals/IgnoredModal';
 import { useTasks, useCalendarEvents } from '@/lib/useSyncnData';
 import { useScheduler } from '@/lib/useScheduler';
 
+const SIDEBAR_MODES = ['expanded', 'collapsed', 'hidden'];
+
 export default function AppLayout() {
+  const [sidebarMode, setSidebarMode] = useState('expanded');
   const [addOpen, setAddOpen] = useState(false);
   const [addType, setAddType] = useState('task');
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -22,14 +26,19 @@ export default function AppLayout() {
   const archivedCount = tasks.filter(t => t.archived).length;
   const ignoredCount = events.filter(e => e.ignored).length;
 
+  const cycleSidebar = () => {
+    setSidebarMode(prev => {
+      const idx = SIDEBAR_MODES.indexOf(prev);
+      return SIDEBAR_MODES[(idx + 1) % SIDEBAR_MODES.length];
+    });
+  };
+
   const handleAddClick = () => {
     setAddType('task');
     setAddOpen(true);
   };
 
-  const handleScheduleAction = (action) => {
-    runSchedule(action);
-  };
+  const handleScheduleAction = (action) => runSchedule(action);
 
   const handleOverflowAction = (action) => {
     if (action === 'archive') setArchiveOpen(true);
@@ -40,17 +49,21 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <TopBar
         onAddClick={handleAddClick}
         onScheduleAction={handleScheduleAction}
         onOverflowAction={handleOverflowAction}
+        onToggleSidebar={cycleSidebar}
         archivedCount={archivedCount}
         ignoredCount={ignoredCount}
       />
-      <main className="pb-8">
-        <Outlet />
-      </main>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar mode={sidebarMode} />
+        <main className="flex-1 overflow-y-auto pb-8 min-w-0">
+          <Outlet />
+        </main>
+      </div>
 
       <AddModal open={addOpen} onOpenChange={setAddOpen} defaultType={addType} />
       <ArchiveModal open={archiveOpen} onOpenChange={setArchiveOpen} />

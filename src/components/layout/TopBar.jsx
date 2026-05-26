@@ -17,17 +17,22 @@ const NAV_ITEMS = [
   { label: 'Compass', path: '/compass' },
 ];
 
-export default function TopBar({ onAddClick, onScheduleAction, onOverflowAction, archivedCount, ignoredCount }) {
+export default function TopBar({ onAddClick, onScheduleAction, onOverflowAction, onToggleSidebar, archivedCount, ignoredCount }) {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="flex items-center justify-between h-14 px-4 max-w-screen-xl mx-auto">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <span className="text-primary font-bold text-lg tracking-tight">Sync'n</span>
-        </Link>
+        {/* Hamburger + Logo */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="ghost" size="icon" onClick={onToggleSidebar} className="w-8 h-8">
+            <Menu className="w-4 h-4" />
+          </Button>
+          <Link to="/" className="flex items-center gap-1">
+            <span className="text-primary font-bold text-lg tracking-tight">Sync'n</span>
+          </Link>
+        </div>
 
         {/* Nav */}
         <nav className="hidden sm:flex items-center gap-1 ml-6">

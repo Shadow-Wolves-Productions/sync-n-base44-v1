@@ -93,7 +93,6 @@ export const DEFAULT_PILLARS = [
   { label: 'Finance', icon: '💰', color: '#d4a843', sub_pillars: ['Budget', 'Invoices', 'Investments', 'Tax'], order: 4 },
   { label: 'Creativity', icon: '🎨', color: '#e07a5c', sub_pillars: ['Writing', 'Music', 'Design', 'Ideas'], order: 5 },
   { label: 'Growth', icon: '🌱', color: '#5b8dd9', sub_pillars: ['Reading', 'Courses', 'Networking', 'Reflection'], order: 6 },
-  { label: 'Parking Lot', icon: '❄️', color: '#4a7fa0', sub_pillars: ['Someday/Maybe', 'On Hold'], order: 7 },
 ];
 
 // Default energy rhythm

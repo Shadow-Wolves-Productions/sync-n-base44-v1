@@ -154,13 +154,16 @@ export function useSettingsMutations() {
   return { update };
 }
 
-// Seed default pillars if none exist
+// Seed default pillars if none exist — guarded by a flag to prevent duplicate seeding
+let _seeding = false;
 export function useSeedPillars() {
   const { data: pillars } = usePillars();
   const { create } = usePillarMutations();
 
   const seed = async () => {
+    if (_seeding) return;
     if (pillars && pillars.length === 0) {
+      _seeding = true;
       for (const p of DEFAULT_PILLARS) {
         await create.mutateAsync(p);
       }
