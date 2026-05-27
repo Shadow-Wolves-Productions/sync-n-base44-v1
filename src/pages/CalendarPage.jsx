@@ -243,7 +243,7 @@ export default function CalendarPage() {
 
                       {isHovered && (
                         <div
-                          className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none bg-card text-card-foreground"
+                          className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none dark:bg-[hsl(220,38%,13%)] bg-white text-foreground"
                           style={{
                             top: height + 4,
                             left: 0,

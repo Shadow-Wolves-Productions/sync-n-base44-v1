@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { usePillarMutations, useTasks } from '@/lib/useSyncnData';
 import { EMOJI_OPTIONS, COLOR_PRESETS } from '@/lib/syncn';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 export default function PillarEditModal({ open, onOpenChange, pillar }) {
   const { update, remove } = usePillarMutations();
@@ -13,6 +13,7 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
   const [label, setLabel] = useState('');
   const [icon, setIcon] = useState('');
   const [color, setColor] = useState('');
+  const [subPillars, setSubPillars] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
       setLabel(pillar.label);
       setIcon(pillar.icon);
       setColor(pillar.color);
+      setSubPillars(pillar.sub_pillars || []);
     }
   }, [pillar]);
 
@@ -28,8 +30,12 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
   const activeTasks = tasks.filter(t => t.pillar_id === pillar.id && !t.archived && !t.done);
 
   const handleSave = async () => {
-    await update.mutateAsync({ id: pillar.id, data: { label, icon, color } });
+    await update.mutateAsync({ id: pillar.id, data: { label, icon, color, sub_pillars: subPillars } });
     onOpenChange(false);
+  };
+
+  const handleDeleteSubPillar = (idx) => {
+    setSubPillars(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleDelete = async () => {
@@ -85,6 +91,26 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
             </div>
             <Input type="color" value={color} onChange={e => setColor(e.target.value)} className="h-8 w-20 mt-1" />
           </div>
+
+          {subPillars.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Sub-pillars</Label>
+              <div className="space-y-1">
+                {subPillars.map((sp, idx) => (
+                  <div key={idx} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
+                    <span>{sp}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubPillar(idx)}
+                      className="text-muted-foreground hover:text-destructive transition-colors ml-2"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-2">
             <Button variant="ghost" size="sm" className={confirmDelete ? "text-white bg-destructive hover:bg-destructive/90" : "text-destructive"} onClick={handleDelete}>
