@@ -34,7 +34,7 @@ export default function AppLayout() {
   };
 
   const toggleSidebar = () => {
-    setSidebarMode(prev => prev === 'hidden' ? 'expanded' : prev === 'collapsed' ? 'expanded' : 'collapsed');
+    setSidebarMode(prev => prev === 'collapsed' ? 'expanded' : 'collapsed');
   };
 
   const handleAddClick = () => {
