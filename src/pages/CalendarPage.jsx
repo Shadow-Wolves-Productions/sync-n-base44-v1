@@ -216,6 +216,7 @@ export default function CalendarPage() {
               <div
                 key={dayIndex}
                 className={`relative border-l border-border/25 ${isToday ? 'bg-primary/[0.02]' : ''}`}
+                style={{ height: HOURS.length * HOUR_HEIGHT }}
               >
                 {/* Hour rows */}
                 {HOURS.map(h => (
