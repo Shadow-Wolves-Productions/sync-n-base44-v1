@@ -5,6 +5,8 @@ import { getGreeting, getCurrentPeriod, getPeriodForHour, sortByTime, offsetToDa
 import PeriodAccordion from '@/components/today/PeriodAccordion';
 import ReminderStrip from '@/components/today/ReminderStrip';
 import LifeBalanceStrip from '@/components/today/LifeBalanceStrip';
+import TomorrowView from '@/components/today/TomorrowView';
+import MiniCalendar from '@/components/today/MiniCalendar';
 import AddModal from '@/components/modals/AddModal';
 import { AlertTriangle } from 'lucide-react';
 
@@ -96,130 +98,145 @@ export default function Today() {
   );
 
   return (
-    <div className="max-w-[720px] mx-auto px-4 pt-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold">{format(today, 'EEEE d MMMM')}</h1>
-        <p className="text-muted-foreground mt-1">{getGreeting()}, Brendan.</p>
-        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-          {urgentCount > 0 && <span className="text-red-400">{urgentCount} urgent</span>}
-          <span>{scheduledToday} scheduled today</span>
-          <span>{eventsToday} calendar events</span>
-        </div>
-      </div>
+    <div className="px-4 pt-6 max-w-screen-xl mx-auto">
+      <div className="flex gap-8">
+        {/* Main content */}
+        <div className="flex-1 min-w-0 max-w-[680px]">
+          {/* Header */}
+          <div className="mb-5">
+            <p className="text-xs text-muted-foreground mb-1">{getGreeting()}</p>
+            <h1 className="text-2xl font-semibold">{format(today, 'EEEE, MMMM d')}</h1>
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+              {urgentCount > 0 && <span className="text-red-400 font-medium">{urgentCount} urgent</span>}
+              <span>{scheduledToday} scheduled</span>
+              <span>{eventsToday} events</span>
+            </div>
+          </div>
 
-      {/* View toggle */}
-      <div className="flex gap-1 mb-4">
-        <button
-          onClick={() => setViewMode('day')}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${
-            viewMode === 'day' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Day
-        </button>
-        <button
-          onClick={() => setViewMode('week')}
-          className={`px-3 py-1 text-xs rounded-md transition-colors ${
-            viewMode === 'week' ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Week
-        </button>
-      </div>
-
-      {/* Reminders */}
-      <ReminderStrip dayOffset={0} />
-
-      {viewMode === 'day' ? (
-        <>
-          {/* Period Accordions */}
-          <div className="space-y-1">
-            {['morning', 'afternoon', 'evening'].map(period => (
-              <PeriodAccordion
-                key={period}
-                period={period}
-                items={getItemsByPeriod(period, todayItems)}
-                pillars={pillars}
-                isOpen={openPeriod === period}
-                onToggle={() => setOpenPeriod(openPeriod === period ? null : period)}
-                onToggleDone={handleToggleDone}
-                onItemClick={handleItemClick}
-              />
+          {/* View toggle */}
+          <div className="flex gap-0.5 mb-5 bg-muted/50 rounded-lg p-0.5 w-fit">
+            {['day', 'tomorrow', 'week'].map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors capitalize font-medium ${
+                  viewMode === mode
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {mode === 'tomorrow' ? 'Tomorrow' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+              </button>
             ))}
           </div>
 
-          {/* Unscheduled urgent */}
-          {unscheduledUrgent.length > 0 && (
-            <div className="mt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-xs font-medium text-red-400">Unscheduled urgent tasks</span>
-              </div>
+          {/* Reminders - only for today */}
+          {viewMode === 'day' && <ReminderStrip dayOffset={0} />}
+
+          {viewMode === 'day' && (
+            <>
               <div className="space-y-1">
-                {unscheduledUrgent.map(t => {
-                  const pillar = pillars.find(p => p.id === t.pillar_id);
-                  return (
-                    <div
-                      key={t.id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer"
-                      onClick={() => handleItemClick({ ...t, _itemType: 'task' })}
-                    >
-                      <div className="w-2 h-2 rounded-full bg-red-400" />
-                      <span className="text-sm flex-1 truncate">{t.title}</span>
-                      {pillar && <span className="text-xs text-muted-foreground">{pillar.icon}</span>}
-                      {t.duration_mins && <span className="text-xs text-muted-foreground font-mono">{t.duration_mins}m</span>}
-                    </div>
-                  );
-                })}
+                {['morning', 'afternoon', 'evening'].map(period => (
+                  <PeriodAccordion
+                    key={period}
+                    period={period}
+                    items={getItemsByPeriod(period, todayItems)}
+                    pillars={pillars}
+                    isOpen={openPeriod === period}
+                    onToggle={() => setOpenPeriod(openPeriod === period ? null : period)}
+                    onToggleDone={handleToggleDone}
+                    onItemClick={handleItemClick}
+                  />
+                ))}
               </div>
-            </div>
-          )}
-        </>
-      ) : (
-        /* Week View */
-        <div className="space-y-3">
-          {Array.from({ length: 7 }, (_, i) => {
-            const date = addDays(today, i);
-            const dayItems = buildDayItems(i);
-            const isToday = i === 0;
-            return (
-              <div key={i} className="rounded-lg bg-card/80 border border-border/50 p-3">
-                <div className="flex items-center gap-3 mb-2">
-                  <span className={`text-sm font-medium ${isToday ? 'text-primary' : ''}`}>
-                    {format(date, 'EEE')}
-                  </span>
-                  <span className={`text-sm font-mono ${isToday ? 'bg-primary text-primary-foreground w-7 h-7 rounded-full flex items-center justify-center' : 'text-muted-foreground'}`}>
-                    {format(date, 'd')}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-auto">{dayItems.length} items</span>
-                </div>
-                {dayItems.length > 0 ? (
+
+              {unscheduledUrgent.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-xs font-medium text-amber-500">Unscheduled urgent</span>
+                  </div>
                   <div className="space-y-0.5">
-                    {dayItems.slice(0, 6).map(item => {
-                      const pillar = pillars.find(p => p.id === item.pillar_id);
-                      const hour = item.start_hour ?? item.recurring_start_hour ?? 0;
-                      const min = item.start_min ?? item.recurring_start_min ?? 0;
+                    {unscheduledUrgent.map(t => {
+                      const pillar = pillars.find(p => p.id === t.pillar_id);
                       return (
-                        <div key={item._key} className="flex items-center gap-2 text-xs py-0.5">
-                          <span className="font-mono text-muted-foreground w-12">{format(new Date(2000, 0, 1, hour, min), 'h:mma').toLowerCase()}</span>
-                          <div className="w-0.5 h-3 rounded-full" style={{ backgroundColor: pillar?.color || '#00b4d8' }} />
-                          <span className={`truncate ${item.done ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
+                        <div
+                          key={t.id}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/40 cursor-pointer"
+                          onClick={() => handleItemClick({ ...t, _itemType: 'task' })}
+                        >
+                          <div className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                          <span className="text-sm flex-1 truncate">{t.title}</span>
+                          {pillar && <span className="text-xs text-muted-foreground">{pillar.icon}</span>}
+                          {t.duration_mins && <span className="text-xs text-muted-foreground font-mono">{t.duration_mins}m</span>}
                         </div>
                       );
                     })}
-                    {dayItems.length > 6 && <p className="text-xs text-muted-foreground">+{dayItems.length - 6} more</p>}
                   </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground">Clear</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                </div>
+              )}
+            </>
+          )}
 
-      <LifeBalanceStrip />
+          {viewMode === 'tomorrow' && (
+            <TomorrowView onItemClick={handleItemClick} />
+          )}
+
+          {viewMode === 'week' && (
+            <div className="space-y-2">
+              {Array.from({ length: 7 }, (_, i) => {
+                const date = addDays(today, i);
+                const dayItems = buildDayItems(i);
+                const isTodayRow = i === 0;
+                return (
+                  <div key={i} className={`rounded-xl border p-3.5 transition-colors ${isTodayRow ? 'border-primary/30 bg-primary/5' : 'border-border/50 bg-card/60'}`}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium ${isTodayRow ? 'text-primary' : 'text-foreground'}`}>
+                          {format(date, 'EEE')}
+                        </span>
+                        <span className={`text-sm font-mono ${isTodayRow ? 'bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs' : 'text-muted-foreground'}`}>
+                          {format(date, 'd')}
+                        </span>
+                      </div>
+                      <span className="text-xs text-muted-foreground ml-auto">
+                        {dayItems.length > 0 ? `${dayItems.length} items` : 'Clear'}
+                      </span>
+                    </div>
+                    {dayItems.length > 0 && (
+                      <div className="space-y-0.5">
+                        {dayItems.slice(0, 5).map(item => {
+                          const pillar = pillars.find(p => p.id === item.pillar_id);
+                          const hour = item.start_hour ?? item.recurring_start_hour ?? 0;
+                          const min = item.start_min ?? item.recurring_start_min ?? 0;
+                          return (
+                            <div key={item._key} className="flex items-center gap-2 text-xs py-0.5 cursor-pointer hover:text-foreground"
+                              onClick={() => handleItemClick(item)}>
+                              <span className="font-mono text-muted-foreground w-12">{format(new Date(2000, 0, 1, hour, min), 'h:mma').toLowerCase()}</span>
+                              <div className="w-0.5 h-3 rounded-full" style={{ backgroundColor: pillar?.color || '#00b4d8' }} />
+                              <span className={`truncate ${item.done ? 'line-through text-muted-foreground' : ''}`}>{item.title}</span>
+                            </div>
+                          );
+                        })}
+                        {dayItems.length > 5 && <p className="text-xs text-muted-foreground pl-14">+{dayItems.length - 5} more</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-8">
+            <LifeBalanceStrip />
+          </div>
+        </div>
+
+        {/* Right: Mini Calendar — always visible on day/tomorrow views, hidden on week */}
+        <div className="hidden lg:block pt-1">
+          <MiniCalendar />
+        </div>
+      </div>
 
       <AddModal open={editOpen} onOpenChange={setEditOpen} editItem={editItem} />
     </div>
