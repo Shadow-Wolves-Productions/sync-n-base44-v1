@@ -201,6 +201,7 @@ export function useScheduler() {
     toast({
       title: scheduledCount > 0 ? `✨ ${scheduledCount} tasks scheduled` : 'No tasks to schedule',
       description: scheduledCount > 0 ? 'Your schedule has been optimized.' : 'All tasks are already scheduled or completed.',
+      duration: 3000,
     });
   }
 
