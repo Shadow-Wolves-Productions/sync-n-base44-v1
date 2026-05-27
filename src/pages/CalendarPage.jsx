@@ -243,14 +243,12 @@ export default function CalendarPage() {
 
                       {isHovered && (
                         <div
-                          className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none"
+                          className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none bg-card text-card-foreground"
                           style={{
                             top: height + 4,
                             left: 0,
                             minWidth: 160,
-                            backgroundColor: 'hsl(var(--popover))',
                             borderColor: `${block.color}50`,
-                            color: 'hsl(var(--popover-foreground))',
                           }}
                         >
                           <p className="text-xs font-semibold">{block.title}</p>
