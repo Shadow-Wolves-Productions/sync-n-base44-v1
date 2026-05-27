@@ -9,7 +9,7 @@ import { ThemeProvider } from '@/lib/useTheme.jsx';
 
 import AppLayout from './components/layout/AppLayout';
 import Today from './pages/Today';
-import CalendarPage from './pages/CalendarPage';
+import CalendarPage from './pages/CalendarPage.jsx';
 import LifeMap from './pages/LifeMap';
 import Compass from './pages/Compass';
 

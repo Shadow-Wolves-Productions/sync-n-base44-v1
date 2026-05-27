@@ -27,7 +27,6 @@ export default function CalendarPage() {
   const [hoveredBlock, setHoveredBlock] = useState(null);
   const scrollRef = useRef(null);
 
-  // Live clock — updates every 30s
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30000);
@@ -118,7 +117,6 @@ export default function CalendarPage() {
   const todayStr = format(now, 'yyyy-MM-dd');
   const colCount = calView === 'week' ? 7 : 1;
 
-  // Determine if a block is "active now" (currently in progress)
   const isActiveNow = (block, date) => {
     if (format(date, 'yyyy-MM-dd') !== todayStr) return false;
     const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -172,7 +170,7 @@ export default function CalendarPage() {
       {/* Scrollable grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="flex" style={{ height: HOURS.length * HOUR_HEIGHT }}>
-          {/* Time gutter — wider with padding */}
+          {/* Time gutter */}
           <div className="shrink-0 relative border-r border-border/40" style={{ width: GUTTER_WIDTH }}>
             {HOURS.map(h => (
               <div key={h} className="absolute text-[10px] font-mono text-muted-foreground/70 text-right pr-3"
@@ -204,13 +202,10 @@ export default function CalendarPage() {
 
                   const borderStyle = block.locked
                     ? `3px solid ${block.color}`
-                    : block.type === 'task'
-                      ? `2px solid ${block.color}`
-                      : block.type === 'recurring'
-                        ? `2px dashed ${block.color}`
-                        : `2px solid ${block.color}`;
+                    : block.type === 'recurring'
+                      ? `2px dashed ${block.color}`
+                      : `2px solid ${block.color}`;
 
-                  // More solid backgrounds — active items extra vivid
                   const bgOpacity = active ? '55' : block.locked ? '35' : '25';
 
                   return (
@@ -242,7 +237,6 @@ export default function CalendarPage() {
                         </div>
                       )}
 
-                      {/* Hover tooltip — fully opaque, rendered in a portal-like position outside overflow */}
                       {isHovered && (
                         <div
                           className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none"
@@ -268,7 +262,6 @@ export default function CalendarPage() {
                   );
                 })}
 
-                {/* Now indicator */}
                 {isToday && nowTop > 0 && (
                   <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: nowTop }}>
                     <div className="flex items-center">
@@ -277,7 +270,6 @@ export default function CalendarPage() {
                         <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-primary animate-ping opacity-40" />
                       </div>
                       <div className="flex-1 h-px bg-primary/60" />
-                      {/* Time label at the END of the line (right side) */}
                       <div className="text-[9px] font-mono text-primary bg-background/90 px-1.5 py-0.5 rounded shrink-0 ml-1">
                         {fmt24(now.getHours(), now.getMinutes())}
                       </div>
