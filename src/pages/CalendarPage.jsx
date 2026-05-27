@@ -52,61 +52,91 @@ export default function CalendarPage() {
     setCalView('day');
   };
 
+  // Resolve collisions: assign column index and total columns to overlapping blocks
+  const resolveCollisions = (blocks) => {
+    const sorted = [...blocks].sort((a, b) => a.startMin - b.startMin);
+    const columns = [];
+    const result = sorted.map(block => {
+      const blockEnd = block.startMin + block.duration;
+      let col = 0;
+      while (columns[col] && columns[col] > block.startMin) col++;
+      columns[col] = blockEnd;
+      return { ...block, col };
+    });
+    // Calculate total columns for each block based on overlaps
+    return result.map((block, i) => {
+      const blockEnd = block.startMin + block.duration;
+      let maxCol = block.col;
+      result.forEach((other, j) => {
+        if (i === j) return;
+        const otherEnd = other.startMin + other.duration;
+        if (block.startMin < otherEnd && blockEnd > other.startMin) {
+          maxCol = Math.max(maxCol, other.col);
+        }
+      });
+      return { ...block, totalCols: maxCol + 1 };
+    });
+  };
+
   const getBlocksForDay = (date) => {
     const offset = dateToOffset(date);
-    const blocks = [];
+    const raw = [];
 
+    // Locked events (meetings, calendar)
     events.filter(e => e.day_offset === offset && !e.ignored).forEach(e => {
-      blocks.push({
+      raw.push({
         id: `event-${e.id}`, title: e.title,
         startMin: (e.start_hour || 0) * 60 + (e.start_min || 0),
-        duration: e.duration_mins || 60, type: 'event',
+        duration: e.duration_mins || 60, type: 'event', locked: true,
         color: '#00b4d8', item: e,
       });
     });
 
+    // AI scheduled tasks
     tasks.filter(t => t.scheduled && t.day_offset === offset && !t.archived).forEach(t => {
       const pillar = pillars.find(p => p.id === t.pillar_id);
-      blocks.push({
+      raw.push({
         id: `task-${t.id}`, title: t.title,
         startMin: (t.start_hour || 0) * 60 + (t.start_min || 0),
-        duration: t.duration_mins || 30, type: 'task',
+        duration: t.duration_mins || 30, type: 'task', locked: false,
         color: pillar?.color || '#6b7280', item: t, done: t.done,
       });
     });
 
+    // Recurring tasks
     tasks.filter(t => t.is_recurring && !t.archived && !t.done).forEach(t => {
       if (!recurringOccursOnDate(t, date)) return;
-      if (blocks.some(b => b.item?.id === t.id)) return;
+      if (raw.some(b => b.item?.id === t.id)) return;
       const pillar = pillars.find(p => p.id === t.pillar_id);
-      blocks.push({
+      raw.push({
         id: `rec-${t.id}-${offset}`, title: t.title,
         startMin: (t.recurring_start_hour || 9) * 60 + (t.recurring_start_min || 0),
-        duration: t.duration_mins || 30, type: 'recurring',
+        duration: t.duration_mins || 30, type: 'recurring', locked: false,
         color: pillar?.color || '#6b7280', item: t,
       });
     });
 
+    // Reminders
     reminders.filter(r => r.block_time).forEach(r => {
       if (r.is_recurring) {
         if (!recurringOccursOnDate(r, date)) return;
-        blocks.push({
+        raw.push({
           id: `rem-${r.id}-${offset}`, title: r.title,
           startMin: (r.recurring_start_hour || 9) * 60 + (r.recurring_start_min || 0),
-          duration: r.duration_mins || 30, type: 'reminder',
+          duration: r.duration_mins || 30, type: 'reminder', locked: false,
           color: '#f59e0b', item: r,
         });
       } else if (r.day_offset === offset) {
-        blocks.push({
+        raw.push({
           id: `rem-${r.id}`, title: r.title,
           startMin: (r.start_hour || 0) * 60 + (r.start_min || 0),
-          duration: r.duration_mins || 30, type: 'reminder',
+          duration: r.duration_mins || 30, type: 'reminder', locked: false,
           color: '#f59e0b', item: r,
         });
       }
     });
 
-    return blocks;
+    return resolveCollisions(raw);
   };
 
   const handleBlockClick = (block) => {
@@ -232,18 +262,31 @@ export default function CalendarPage() {
                   const top = ((block.startMin / 60) - 6) * HOUR_HEIGHT;
                   const height = Math.max(24, (block.duration / 60) * HOUR_HEIGHT);
                   const isHovered = hoveredBlock === block.id;
+                  const colWidth = 100 / (block.totalCols || 1);
+                  const colLeft = block.col * colWidth;
+
+                  // Type-based border style
+                  const borderStyle = block.locked
+                    ? `3px solid ${block.color}`          // Locked: solid
+                    : block.type === 'task'
+                      ? `2px solid ${block.color}90`      // AI scheduled: semi-solid
+                      : block.type === 'recurring'
+                        ? `2px dashed ${block.color}80`   // Recurring: dashed
+                        : `2px solid ${block.color}60`;   // Reminder: lighter
 
                   return (
                     <div
                       key={block.id}
-                      className={`absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer overflow-visible transition-all z-10 ${block.done ? 'opacity-40' : 'opacity-90 hover:opacity-100'}`}
+                      className={`absolute rounded-lg px-2 py-1 cursor-pointer overflow-visible transition-all z-10 ${block.done ? 'opacity-35' : 'opacity-90 hover:opacity-100'}`}
                       style={{
                         top: Math.max(0, top),
                         height,
-                        backgroundColor: `${block.color}18`,
-                        borderLeft: `3px solid ${block.color}`,
+                        left: `calc(${colLeft}% + 2px)`,
+                        width: `calc(${colWidth}% - 4px)`,
+                        backgroundColor: block.locked ? `${block.color}22` : `${block.color}12`,
+                        borderLeft: borderStyle,
                         color: block.color,
-                        boxShadow: isHovered ? `0 4px 12px ${block.color}30` : 'none',
+                        boxShadow: isHovered ? `0 4px 12px ${block.color}25` : 'none',
                       }}
                       onMouseEnter={() => setHoveredBlock(block.id)}
                       onMouseLeave={() => setHoveredBlock(null)}
@@ -273,6 +316,7 @@ export default function CalendarPage() {
                           <p className="text-[10px] text-muted-foreground mt-0.5">
                             {formatTime(Math.floor(block.startMin / 60), block.startMin % 60)} · {block.duration}m
                           </p>
+                          {block.locked && <p className="text-[10px] text-amber-400 mt-0.5">Locked event</p>}
                           {block.item?.notes && <p className="text-[10px] text-muted-foreground mt-1 truncate">{block.item.notes}</p>}
                         </div>
                       )}
@@ -283,10 +327,18 @@ export default function CalendarPage() {
                 {/* Now indicator */}
                 {isToday && nowTop > 0 && (
                   <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: nowTop }}>
-                    <div className="flex items-center">
-                      <div className="w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary/50" />
-                      <div className="flex-1 h-px bg-primary/70" />
+                    <div className="flex items-center gap-0">
+                      <div className="relative">
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-primary/40 shadow-md" />
+                        <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-primary animate-ping opacity-40" />
+                      </div>
+                      <div className="flex-1 h-px bg-primary/60" />
                     </div>
+                    {calView === 'day' && (
+                      <div className="absolute -top-3 left-3 text-[9px] font-mono text-primary bg-background/80 px-1 rounded">
+                        {format(now, 'h:mm a')}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

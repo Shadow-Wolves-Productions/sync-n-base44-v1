@@ -8,6 +8,7 @@ import LifeBalanceStrip from '@/components/today/LifeBalanceStrip';
 import TomorrowView from '@/components/today/TomorrowView';
 import MiniCalendar from '@/components/today/MiniCalendar';
 import AddModal from '@/components/modals/AddModal';
+import NextBestMove from '@/components/today/NextBestMove';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Today() {
@@ -232,10 +233,12 @@ export default function Today() {
           </div>
         </div>
 
-        {/* Right: Mini Calendar — always visible on day/tomorrow views, hidden on week */}
-        <div className="hidden lg:block pt-1">
-          <MiniCalendar />
-        </div>
+        {/* Right: Next Best Move panel */}
+        {(viewMode === 'day' || viewMode === 'tomorrow') && (
+          <div className="hidden lg:block pt-1">
+            <NextBestMove onTaskClick={handleItemClick} />
+          </div>
+        )}
       </div>
 
       <AddModal open={editOpen} onOpenChange={setEditOpen} editItem={editItem} />
