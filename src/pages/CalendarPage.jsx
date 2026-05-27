@@ -303,13 +303,12 @@ export default function CalendarPage() {
                       )}
                       {isHovered && (
                         <div
-                          className="absolute left-0 z-30 rounded-lg px-2 py-2 shadow-lg border pointer-events-none"
+                          className="absolute left-0 z-30 rounded-lg px-2 py-2 shadow-xl border pointer-events-none bg-card text-foreground"
                           style={{
                             top: height + 2,
-                            backgroundColor: 'hsl(var(--card))',
                             borderColor: `${block.color}40`,
-                            color: 'hsl(var(--foreground))',
                             minWidth: 140,
+                            isolation: 'isolate',
                           }}
                         >
                           <p className="text-xs font-semibold">{block.title}</p>
