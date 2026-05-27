@@ -104,7 +104,11 @@ export default function CalendarPage() {
   };
 
   const handleBlockClick = (block) => {
-    setEditItem(block.type === 'event' || block.type === 'reminder' ? { ...block.item, _type: 'meeting' } : { ...block.item, _type: 'task' });
+    let _type;
+    if (block.type === 'reminder') _type = 'reminder';
+    else if (block.type === 'event') _type = 'meeting';
+    else _type = 'task';
+    setEditItem({ ...block.item, _type });
     setEditOpen(true);
   };
 

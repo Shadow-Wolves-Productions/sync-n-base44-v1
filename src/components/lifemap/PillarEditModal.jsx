@@ -13,6 +13,7 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
   const [label, setLabel] = useState('');
   const [icon, setIcon] = useState('');
   const [color, setColor] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (pillar) {
@@ -24,8 +25,7 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
 
   if (!pillar) return null;
 
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const activeTasks = tasks.filter(t => t.pillar_id === (pillar?.id) && !t.archived && !t.done);
+  const activeTasks = tasks.filter(t => t.pillar_id === pillar.id && !t.archived && !t.done);
 
   const handleSave = async () => {
     await update.mutateAsync({ id: pillar.id, data: { label, icon, color } });
