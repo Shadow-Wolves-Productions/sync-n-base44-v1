@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePillars, usePillarMutations, useTasks } from '@/lib/useSyncnData';
 import PillarCard from '@/components/lifemap/PillarCard';
 import PillarEditModal from '@/components/lifemap/PillarEditModal';
@@ -9,27 +10,38 @@ export default function LifeMap() {
   const { data: pillars } = usePillars();
   const { data: tasks } = useTasks();
   const { create } = usePillarMutations();
-  const [selectedPillar, setSelectedPillar] = useState(null);
+  const location = useLocation();
+  const [selectedPillarId, setSelectedPillarId] = useState(null);
+  const [selectedSubPillar, setSelectedSubPillar] = useState(null);
   const [editPillar, setEditPillar] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
 
+  // Handle navigation from sidebar (?pillar=xxx&sub=yyy)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const pillarParam = params.get('pillar');
+    const subParam = params.get('sub');
+    if (pillarParam) {
+      setSelectedPillarId(pillarParam);
+      setSelectedSubPillar(subParam || null);
+    }
+  }, [location.search]);
+
   const handleAddPillar = async () => {
     const order = pillars.length;
-    await create.mutateAsync({
-      label: 'New Pillar',
-      icon: '⚡',
-      color: '#6b7280',
-      sub_pillars: [],
-      order,
-    });
+    await create.mutateAsync({ label: 'New Pillar', icon: '⚡', color: '#6b7280', sub_pillars: [], order });
   };
 
-  if (selectedPillar) {
-    const pillar = pillars.find(p => p.id === selectedPillar);
-    if (!pillar) { setSelectedPillar(null); return null; }
+  if (selectedPillarId) {
+    const pillar = pillars.find(p => p.id === selectedPillarId);
+    if (!pillar) { setSelectedPillarId(null); return null; }
     return (
       <div className="max-w-[720px] mx-auto px-4 pt-6">
-        <PillarDrilldown pillar={pillar} onBack={() => setSelectedPillar(null)} />
+        <PillarDrilldown
+          pillar={pillar}
+          initialSubPillar={selectedSubPillar}
+          onBack={() => { setSelectedPillarId(null); setSelectedSubPillar(null); }}
+        />
       </div>
     );
   }
@@ -37,14 +49,13 @@ export default function LifeMap() {
   return (
     <div className="max-w-screen-lg mx-auto px-4 pt-6">
       <h1 className="text-2xl font-semibold mb-6">Life Map</h1>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {pillars.map(pillar => (
           <PillarCard
             key={pillar.id}
             pillar={pillar}
             tasks={tasks}
-            onClick={() => setSelectedPillar(pillar.id)}
+            onClick={() => { setSelectedPillarId(pillar.id); setSelectedSubPillar(null); }}
             onEdit={() => { setEditPillar(pillar); setEditOpen(true); }}
           />
         ))}
@@ -56,7 +67,6 @@ export default function LifeMap() {
           <span className="text-xs">New Pillar</span>
         </button>
       </div>
-
       <PillarEditModal open={editOpen} onOpenChange={setEditOpen} pillar={editPillar} />
     </div>
   );

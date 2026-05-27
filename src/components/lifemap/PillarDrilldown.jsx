@@ -4,32 +4,40 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTasks, useTaskMutations, usePillarMutations } from '@/lib/useSyncnData';
 import { PRIORITY_COLORS } from '@/lib/syncn';
-import { ChevronLeft, Plus, Pencil, X } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, Folder, FolderOpen } from 'lucide-react';
 import AddModal from '@/components/modals/AddModal';
 
-const FILTERS = [
+const STATUS_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'active', label: '🔥 Active' },
-  { key: 'upcoming', label: '🟡 Upcoming' },
+  { key: 'upcoming', label: '🕐 Upcoming' },
   { key: 'parked', label: '❄️ Parked' },
   { key: 'done', label: '✓ Done' },
 ];
 
-export default function PillarDrilldown({ pillar, onBack }) {
+export default function PillarDrilldown({ pillar, initialSubPillar = null, onBack }) {
   const { data: tasks } = useTasks();
   const { update: updateTask } = useTaskMutations();
   const { update: updatePillar } = usePillarMutations();
-  const [filter, setFilter] = useState('all');
+  const [selectedSubPillar, setSelectedSubPillar] = useState(initialSubPillar);
+  const [statusFilter, setStatusFilter] = useState('all');
   const [editItem, setEditItem] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingSub, setEditingSub] = useState(null);
+  const [editingSubName, setEditingSubName] = useState('');
+  const [renamingSubPillar, setRenamingSubPillar] = useState(null);
+  const [addingSubPillar, setAddingSubPillar] = useState(false);
   const [newSubName, setNewSubName] = useState('');
-  const [addingSub, setAddingSub] = useState(false);
 
   const pillarTasks = tasks.filter(t => t.pillar_id === pillar.id && !t.archived);
-  const filtered = filter === 'all' ? pillarTasks
-    : filter === 'done' ? pillarTasks.filter(t => t.done)
-    : pillarTasks.filter(t => t.status === filter && !t.done);
+
+  // Tasks for the current view
+  const viewTasks = selectedSubPillar
+    ? pillarTasks.filter(t => t.sub_pillar === selectedSubPillar)
+    : pillarTasks.filter(t => !t.sub_pillar); // unassigned tasks when at pillar level
+
+  const filtered = statusFilter === 'all' ? viewTasks
+    : statusFilter === 'done' ? viewTasks.filter(t => t.done)
+    : viewTasks.filter(t => t.status === statusFilter && !t.done);
 
   const handleToggleDone = async (task, checked) => {
     await updateTask.mutateAsync({
@@ -38,21 +46,15 @@ export default function PillarDrilldown({ pillar, onBack }) {
     });
   };
 
-  const handleSubPillarRename = async (oldName, newName) => {
-    if (!newName.trim()) return;
-    const newSubs = pillar.sub_pillars.map(s => s === oldName ? newName : s);
+  const handleRenameSubPillar = async (oldName, newName) => {
+    if (!newName.trim() || newName === oldName) { setRenamingSubPillar(null); return; }
+    const newSubs = pillar.sub_pillars.map(s => s === oldName ? newName.trim() : s);
     await updatePillar.mutateAsync({ id: pillar.id, data: { sub_pillars: newSubs } });
-    // Update tasks with old sub_pillar name
     for (const t of tasks.filter(t => t.pillar_id === pillar.id && t.sub_pillar === oldName)) {
-      await updateTask.mutateAsync({ id: t.id, data: { sub_pillar: newName } });
+      await updateTask.mutateAsync({ id: t.id, data: { sub_pillar: newName.trim() } });
     }
-    setEditingSub(null);
-  };
-
-  const handleSubPillarDelete = async (name) => {
-    const newSubs = pillar.sub_pillars.filter(s => s !== name);
-    await updatePillar.mutateAsync({ id: pillar.id, data: { sub_pillars: newSubs } });
-    setEditingSub(null);
+    if (selectedSubPillar === oldName) setSelectedSubPillar(newName.trim());
+    setRenamingSubPillar(null);
   };
 
   const handleAddSubPillar = async () => {
@@ -60,12 +62,87 @@ export default function PillarDrilldown({ pillar, onBack }) {
     const newSubs = [...(pillar.sub_pillars || []), newSubName.trim()];
     await updatePillar.mutateAsync({ id: pillar.id, data: { sub_pillars: newSubs } });
     setNewSubName('');
-    setAddingSub(false);
+    setAddingSubPillar(false);
   };
 
+  const subPillars = pillar.sub_pillars || [];
+
+  // Sub-pillar task counts
+  const getSubCount = (sp) => pillarTasks.filter(t => t.sub_pillar === sp && !t.done).length;
+  const unassignedCount = pillarTasks.filter(t => !t.sub_pillar && !t.done).length;
+
+  // ── SUB-PILLAR (PROJECT) VIEW ──
+  if (selectedSubPillar) {
+    return (
+      <div>
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 mb-5">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedSubPillar(null)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => setSelectedSubPillar(null)}>
+            {pillar.icon} {pillar.label}
+          </span>
+          <span className="text-muted-foreground/50">/</span>
+          <div className="flex items-center gap-2">
+            <FolderOpen className="w-4 h-4" style={{ color: pillar.color }} />
+            {renamingSubPillar === selectedSubPillar ? (
+              <Input
+                className="h-6 w-36 text-sm font-semibold"
+                defaultValue={selectedSubPillar}
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleRenameSubPillar(selectedSubPillar, e.target.value);
+                  if (e.key === 'Escape') setRenamingSubPillar(null);
+                }}
+                onBlur={e => handleRenameSubPillar(selectedSubPillar, e.target.value)}
+              />
+            ) : (
+              <h2
+                className="text-xl font-semibold cursor-pointer hover:opacity-70"
+                onClick={() => { setRenamingSubPillar(selectedSubPillar); setEditingSubName(selectedSubPillar); }}
+                title="Click to rename"
+              >
+                {selectedSubPillar}
+              </h2>
+            )}
+            <button
+              onClick={() => { setRenamingSubPillar(selectedSubPillar); setEditingSubName(selectedSubPillar); }}
+              className="text-muted-foreground hover:text-foreground transition-colors ml-1"
+              title="Rename project"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Status filters */}
+        <div className="flex gap-1.5 mb-4 overflow-x-auto">
+          {STATUS_FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                statusFilter === f.key ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Task list */}
+        <TaskList tasks={filtered} pillar={pillar} onTaskClick={(t) => { setEditItem({ ...t, _type: 'task' }); setEditOpen(true); }} onToggleDone={handleToggleDone} />
+
+        <AddModal open={editOpen} onOpenChange={setEditOpen} editItem={editItem} />
+      </div>
+    );
+  }
+
+  // ── PILLAR OVERVIEW ──
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-5">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onBack}>
           <ChevronLeft className="w-4 h-4" />
         </Button>
@@ -73,104 +150,125 @@ export default function PillarDrilldown({ pillar, onBack }) {
         <h2 className="text-xl font-semibold">{pillar.label}</h2>
       </div>
 
-      {/* Sub-pillar chips */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {(pillar.sub_pillars || []).map(sp => (
-          <div key={sp} className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-sm">
-            {editingSub === sp ? (
+      {/* Projects (sub-pillars) as folders */}
+      <div className="mb-6">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Projects</p>
+        <div className="space-y-1">
+          {subPillars.map(sp => {
+            const count = getSubCount(sp);
+            return (
+              <div key={sp} className="flex items-center gap-2 group">
+                <button
+                  onClick={() => { setSelectedSubPillar(sp); setStatusFilter('all'); }}
+                  className="flex items-center gap-2.5 flex-1 px-3 py-2 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                >
+                  <Folder className="w-4 h-4 shrink-0" style={{ color: pillar.color }} />
+                  <span className="text-sm font-medium flex-1">{sp}</span>
+                  {count > 0 && (
+                    <span className="text-xs text-muted-foreground font-mono">{count}</span>
+                  )}
+                </button>
+                <button
+                  onClick={() => { setRenamingSubPillar(sp); setEditingSubName(sp); }}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                  title="Rename"
+                >
+                  {renamingSubPillar === sp ? (
+                    <Input
+                      className="h-6 w-28 text-xs"
+                      defaultValue={sp}
+                      autoFocus
+                      onClick={e => e.stopPropagation()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRenameSubPillar(sp, e.target.value);
+                        if (e.key === 'Escape') setRenamingSubPillar(null);
+                      }}
+                      onBlur={e => handleRenameSubPillar(sp, e.target.value)}
+                    />
+                  ) : (
+                    <Pencil className="w-3 h-3" />
+                  )}
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Add new project */}
+          {addingSubPillar ? (
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <Folder className="w-4 h-4 text-muted-foreground shrink-0" />
               <Input
-                className="h-5 w-24 text-xs"
-                defaultValue={sp}
+                className="h-7 text-sm flex-1"
+                value={newSubName}
+                onChange={e => setNewSubName(e.target.value)}
+                placeholder="Project name..."
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSubPillarRename(sp, e.target.value);
-                  if (e.key === 'Escape') setEditingSub(null);
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleAddSubPillar();
+                  if (e.key === 'Escape') setAddingSubPillar(false);
                 }}
-                onBlur={(e) => handleSubPillarRename(sp, e.target.value)}
               />
-            ) : (
-              <>
-                <span>{sp}</span>
-                <button onClick={() => setEditingSub(sp)} className="hover:text-foreground text-muted-foreground">
-                  <Pencil className="w-3 h-3" />
-                </button>
-                <button onClick={() => handleSubPillarDelete(sp)} className="hover:text-destructive text-muted-foreground">
-                  <X className="w-3 h-3" />
-                </button>
-              </>
-            )}
-          </div>
-        ))}
-        {addingSub ? (
-          <div className="flex items-center gap-1">
-            <Input
-              className="h-7 w-28 text-xs"
-              value={newSubName}
-              onChange={e => setNewSubName(e.target.value)}
-              placeholder="New sub-pillar"
-              autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') handleAddSubPillar(); if (e.key === 'Escape') setAddingSub(false); }}
-            />
-            <Button size="sm" className="h-7 text-xs" onClick={handleAddSubPillar}>Add</Button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setAddingSub(true)}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-foreground/30"
-          >
-            <Plus className="w-3 h-3" /> Sub-pillar
-          </button>
-        )}
-      </div>
-
-      {/* Filter pills */}
-      <div className="flex gap-1.5 mb-4 overflow-x-auto">
-        {FILTERS.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-              filter === f.key ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Task list */}
-      <div className="space-y-1">
-        {filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No tasks</p>
-        ) : (
-          filtered.map(task => (
-            <div
-              key={task.id}
-              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer group"
-              onClick={() => { setEditItem({ ...task, _type: 'task' }); setEditOpen(true); }}
-            >
-              <div className="w-1 h-8 rounded-full shrink-0" style={{ backgroundColor: pillar.color }} />
-              <div onClick={e => e.stopPropagation()}>
-                <Checkbox
-                  checked={task.done}
-                  onCheckedChange={(c) => handleToggleDone(task, c)}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm truncate ${task.done ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
-                {task.sub_pillar && <p className="text-xs text-muted-foreground">{task.sub_pillar}</p>}
-              </div>
-              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] }} />
-              {task.duration_mins && <span className="text-xs text-muted-foreground font-mono">{task.duration_mins}m</span>}
-              {task.postpone_count > 0 && (
-                <span className="text-xs text-amber-500">↻{task.postpone_count}</span>
-              )}
+              <Button size="sm" className="h-7 text-xs" onClick={handleAddSubPillar}>Add</Button>
             </div>
-          ))
-        )}
+          ) : (
+            <button
+              onClick={() => setAddingSubPillar(true)}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg border border-dashed border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> New project
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Unassigned tasks */}
+      {unassignedCount > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Unassigned tasks</p>
+          <div className="flex gap-1.5 mb-3 overflow-x-auto">
+            {STATUS_FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setStatusFilter(f.key)}
+                className={`px-3 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
+                  statusFilter === f.key ? 'bg-primary/10 text-primary font-medium' : 'text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <TaskList tasks={filtered} pillar={pillar} onTaskClick={(t) => { setEditItem({ ...t, _type: 'task' }); setEditOpen(true); }} onToggleDone={handleToggleDone} />
+        </div>
+      )}
 
       <AddModal open={editOpen} onOpenChange={setEditOpen} editItem={editItem} />
+    </div>
+  );
+}
+
+function TaskList({ tasks, pillar, onTaskClick, onToggleDone }) {
+  if (tasks.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">No tasks</p>;
+  return (
+    <div className="space-y-1">
+      {tasks.map(task => (
+        <div
+          key={task.id}
+          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer group"
+          onClick={() => onTaskClick(task)}
+        >
+          <div className="w-1 h-8 rounded-full shrink-0" style={{ backgroundColor: pillar.color }} />
+          <div onClick={e => e.stopPropagation()}>
+            <Checkbox checked={task.done} onCheckedChange={(c) => onToggleDone(task, c)} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm truncate ${task.done ? 'line-through text-muted-foreground' : ''}`}>{task.title}</p>
+          </div>
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PRIORITY_COLORS[task.priority] }} />
+          {task.duration_mins && <span className="text-xs text-muted-foreground font-mono">{task.duration_mins}m</span>}
+          {task.postpone_count > 0 && <span className="text-xs text-amber-500">↻{task.postpone_count}</span>}
+        </div>
+      ))}
     </div>
   );
 }

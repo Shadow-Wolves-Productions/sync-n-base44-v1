@@ -125,21 +125,31 @@ export default function TaskForm({ editItem, onDone }) {
           ))}
         </div>
 
-        {/* Sub-pillar pills — appear when pillar selected */}
+        {/* Project (sub-pillar) folder assignment */}
         {selectedPillar?.sub_pillars?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 pl-1 pt-0.5">
+          <div className="flex flex-wrap gap-1.5 pl-1 pt-0.5 items-center">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider mr-1">Project:</span>
+            <button
+              type="button"
+              onClick={() => set('sub_pillar', '')}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] border transition-all ${
+                !form.sub_pillar ? 'border-border bg-muted text-foreground' : 'border-border/50 text-muted-foreground hover:bg-muted/50'
+              }`}
+            >
+              None
+            </button>
             {selectedPillar.sub_pillars.map(sp => (
               <button
                 key={sp}
                 type="button"
-                onClick={() => set('sub_pillar', form.sub_pillar === sp ? '' : sp)}
-                className={`px-2.5 py-0.5 rounded-full text-[11px] border transition-all ${
+                onClick={() => set('sub_pillar', sp)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] border transition-all ${
                   form.sub_pillar === sp
-                    ? 'border-border bg-muted text-foreground'
+                    ? 'border-border bg-muted text-foreground font-medium'
                     : 'border-border/50 text-muted-foreground hover:bg-muted/50'
                 }`}
               >
-                {sp}
+                📁 {sp}
               </button>
             ))}
           </div>
