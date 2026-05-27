@@ -72,13 +72,12 @@ export default function EventForm({ editItem, onDone }) {
         </div>
       )}
 
-      {form.is_recurring ? (
-        <RecurringFields
-          data={form}
-          onChange={updated => setForm(f => ({ ...f, ...updated }))}
-        />
-      ) : (
-        <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label>Duration (min)</Label>
+          <Input type="number" value={form.duration_mins} onChange={e => set('duration_mins', Number(e.target.value))} min={15} step={15} className="h-9" />
+        </div>
+        {!form.is_recurring && (
           <div className="space-y-1.5">
             <Label>Time</Label>
             <Input
@@ -91,11 +90,14 @@ export default function EventForm({ editItem, onDone }) {
               }}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label>Duration (min)</Label>
-            <Input type="number" value={form.duration_mins} onChange={e => set('duration_mins', Number(e.target.value))} min={15} step={15} className="h-9" />
-          </div>
-        </div>
+        )}
+      </div>
+
+      {form.is_recurring && (
+        <RecurringFields
+          data={form}
+          onChange={updated => setForm(f => ({ ...f, ...updated }))}
+        />
       )}
 
       <div className="space-y-1.5">
