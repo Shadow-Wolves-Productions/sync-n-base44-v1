@@ -18,7 +18,8 @@ export default function PeriodAccordion({ period, items, pillars, isOpen, onTogg
 
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
-      <CollapsibleTrigger className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors rounded-lg">
+      <div className={`rounded-xl border transition-all ${isOpen ? 'border-border bg-card shadow-sm' : 'border-transparent hover:border-border/50'}`}>
+      <CollapsibleTrigger className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/10 transition-colors rounded-xl">
         <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-90' : ''}`} />
         <span className="text-base">{config.icon}</span>
         <span className="text-sm font-medium">{config.label}</span>
@@ -61,6 +62,7 @@ export default function PeriodAccordion({ period, items, pillars, isOpen, onTogg
           )}
         </AnimatePresence>
       </CollapsibleContent>
+      </div>
     </Collapsible>
   );
 }

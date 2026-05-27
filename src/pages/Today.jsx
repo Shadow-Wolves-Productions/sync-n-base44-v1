@@ -125,7 +125,7 @@ export default function Today() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {mode === 'tomorrow' ? 'Tomorrow' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                {mode === 'day' ? 'Today' : mode === 'tomorrow' ? 'Tomorrow' : 'Week'}
               </button>
             ))}
           </div>
