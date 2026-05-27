@@ -154,20 +154,20 @@ export function useSettingsMutations() {
   return { update };
 }
 
-// Seed default pillars if none exist — guarded by a flag to prevent duplicate seeding
-let _seeding = false;
+// Seed default pillars if none exist — guarded by localStorage to prevent duplicate seeding
+const SEED_KEY = 'syncn_pillars_seeded';
 export function useSeedPillars() {
-  const { data: pillars } = usePillars();
-  const { create } = usePillarMutations();
+  const qc = useQueryClient();
 
   const seed = async () => {
-    if (_seeding) return;
-    if (pillars && pillars.length === 0) {
-      _seeding = true;
-      for (const p of DEFAULT_PILLARS) {
-        await create.mutateAsync(p);
-      }
+    if (localStorage.getItem(SEED_KEY)) return;
+    localStorage.setItem(SEED_KEY, '1');
+    const existing = await base44.entities.Pillar.list('order');
+    if (existing.length > 0) return;
+    for (const p of DEFAULT_PILLARS) {
+      await base44.entities.Pillar.create(p);
     }
+    qc.invalidateQueries({ queryKey: ['pillars'] });
   };
 
   return seed;
