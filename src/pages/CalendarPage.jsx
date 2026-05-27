@@ -194,14 +194,14 @@ export default function CalendarPage() {
 
       {/* Scrollable grid */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="relative" style={{ display: 'grid', gridTemplateColumns: `56px repeat(${colCount}, 1fr)`, height: HOURS.length * HOUR_HEIGHT }}>
-          {/* Time labels */}
-          <div className="relative">
+        <div className="flex" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+          {/* Time gutter */}
+          <div className="shrink-0 relative" style={{ width: 56 }}>
             {HOURS.map(h => (
               <div
                 key={h}
                 className="absolute right-2 text-[10px] font-mono text-muted-foreground/60"
-                style={{ top: (h - 6) * HOUR_HEIGHT - 7 }}
+                style={{ top: (h - 6) * HOUR_HEIGHT - 7, width: 50 }}
               >
                 {format(new Date(2000, 0, 1, h), 'ha').toLowerCase()}
               </div>
@@ -215,8 +215,7 @@ export default function CalendarPage() {
             return (
               <div
                 key={dayIndex}
-                className={`relative border-l border-border/25 ${isToday ? 'bg-primary/[0.02]' : ''}`}
-                style={{ height: HOURS.length * HOUR_HEIGHT }}
+                className={`relative flex-1 border-l border-border/25 ${isToday ? 'bg-primary/[0.02]' : ''}`}
               >
                 {/* Hour rows */}
                 {HOURS.map(h => (
@@ -237,7 +236,7 @@ export default function CalendarPage() {
                   return (
                     <div
                       key={block.id}
-                      className={`absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer overflow-hidden transition-all z-10 ${block.done ? 'opacity-40' : 'opacity-90 hover:opacity-100'}`}
+                      className={`absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer overflow-visible transition-all z-10 ${block.done ? 'opacity-40' : 'opacity-90 hover:opacity-100'}`}
                       style={{
                         top: Math.max(0, top),
                         height,
@@ -259,10 +258,9 @@ export default function CalendarPage() {
                           {block.duration && ` · ${block.duration}m`}
                         </div>
                       )}
-                      {/* Hover detail */}
-                      {isHovered && height < 60 && (
+                      {isHovered && (
                         <div
-                          className="absolute left-0 right-0 z-20 rounded-lg px-2 py-2 shadow-lg border"
+                          className="absolute left-0 z-30 rounded-lg px-2 py-2 shadow-lg border pointer-events-none"
                           style={{
                             top: height + 2,
                             backgroundColor: 'hsl(var(--card))',
