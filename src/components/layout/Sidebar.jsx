@@ -75,7 +75,7 @@ export default function Sidebar({ mode, onToggle }) {
               <div key={pillar.id} className="flex flex-col">
                 <div className={`flex items-center mx-1 rounded-md transition-colors ${isActive ? 'bg-primary/10' : 'hover:bg-muted/60'}`}>
                   <button
-                    onClick={() => handlePillarClick(pillar.id)}
+                    onClick={() => { handlePillarClick(pillar.id); if (hasSubPillars) toggleExpand(pillar.id); }}
                     className="flex items-center gap-2.5 px-2.5 py-1.5 text-left flex-1 min-w-0 group"
                   >
                     <span className="text-base leading-none shrink-0">{pillar.icon}</span>
@@ -88,7 +88,7 @@ export default function Sidebar({ mode, onToggle }) {
                   </button>
                   {hasSubPillars && (
                     <button
-                      onClick={() => toggleExpand(pillar.id)}
+                      onClick={(e) => { e.stopPropagation(); toggleExpand(pillar.id); }}
                       className="pr-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors shrink-0"
                     >
                       {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}

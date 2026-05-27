@@ -24,9 +24,8 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
 
   if (!pillar) return null;
 
-  const activeTasks = tasks.filter(t => t.pillar_id === pillar.id && !t.archived && !t.done);
-  const isParkingLot = pillar.label === 'Parking Lot';
-  const canDelete = activeTasks.length === 0 && !isParkingLot;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const activeTasks = tasks.filter(t => t.pillar_id === (pillar?.id) && !t.archived && !t.done);
 
   const handleSave = async () => {
     await update.mutateAsync({ id: pillar.id, data: { label, icon, color } });
@@ -34,10 +33,9 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
   };
 
   const handleDelete = async () => {
-    if (canDelete) {
-      await remove.mutateAsync(pillar.id);
-      onOpenChange(false);
-    }
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    await remove.mutateAsync(pillar.id);
+    onOpenChange(false);
   };
 
   return (
@@ -89,12 +87,10 @@ export default function PillarEditModal({ open, onOpenChange, pillar }) {
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            {canDelete && (
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={handleDelete}>
-                <Trash2 className="w-4 h-4 mr-1" /> Delete
-              </Button>
-            )}
-            {!canDelete && <div />}
+            <Button variant="ghost" size="sm" className={confirmDelete ? "text-white bg-destructive hover:bg-destructive/90" : "text-destructive"} onClick={handleDelete}>
+              <Trash2 className="w-4 h-4 mr-1" />
+              {confirmDelete ? `Yes, delete (${activeTasks.length} tasks)` : 'Delete'}
+            </Button>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button size="sm" onClick={handleSave}>Save</Button>
