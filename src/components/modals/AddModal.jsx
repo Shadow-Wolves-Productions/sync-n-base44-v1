@@ -22,7 +22,7 @@ export default function AddModal({ open, onOpenChange, defaultType = 'task', edi
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="w-full">
               <TabsTrigger value="task" className="flex-1">📋 Task</TabsTrigger>
-              <TabsTrigger value="meeting" className="flex-1">📅 Meeting</TabsTrigger>
+              <TabsTrigger value="meeting" className="flex-1">📅 Event</TabsTrigger>
               <TabsTrigger value="reminder" className="flex-1">🔔 Reminder</TabsTrigger>
             </TabsList>
             <TabsContent value="task"><TaskForm onDone={() => onOpenChange(false)} /></TabsContent>
