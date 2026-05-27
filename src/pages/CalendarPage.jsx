@@ -172,7 +172,7 @@ export default function CalendarPage() {
       </div>
 
       {/* Scrollable grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-3">
         <div className="flex" style={{ height: HOURS.length * HOUR_HEIGHT }}>
           {/* Time gutter */}
           <div className="shrink-0 relative border-r border-border/40" style={{ width: GUTTER_WIDTH }}>
