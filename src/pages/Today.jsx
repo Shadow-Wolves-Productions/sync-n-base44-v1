@@ -9,6 +9,8 @@ import TomorrowView from '@/components/today/TomorrowView';
 import MiniCalendar from '@/components/today/MiniCalendar';
 import AddModal from '@/components/modals/AddModal';
 import NextBestMove from '@/components/today/NextBestMove';
+import PillarTimeStrip from '@/components/today/PillarTimeStrip';
+import QuickAddBar from '@/components/today/QuickAddBar';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Today() {
@@ -83,7 +85,8 @@ export default function Today() {
     if (item._itemType === 'task') {
       setEditItem({ ...item, _type: 'task' });
     } else {
-      setEditItem({ ...item, _type: 'meeting' });
+      // Use 'meeting' if it has attendees, otherwise 'event'
+      setEditItem({ ...item, _type: item.attendees !== undefined ? 'meeting' : 'event' });
     }
     setEditOpen(true);
   };
@@ -113,6 +116,12 @@ export default function Today() {
               <span>{eventsToday} events</span>
             </div>
           </div>
+
+          {/* Pillar time summary */}
+          <PillarTimeStrip />
+
+          {/* Quick add bar */}
+          <QuickAddBar />
 
           {/* View toggle */}
           <div className="flex gap-0.5 mb-5 bg-muted/50 rounded-lg p-0.5 w-fit">

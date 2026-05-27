@@ -25,6 +25,7 @@ export default function CalendarPage() {
   const [editItem, setEditItem] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [hoveredBlock, setHoveredBlock] = useState(null);
+  const [tooltip, setTooltip] = useState(null); // { block, x, y }
   const scrollRef = useRef(null);
 
   const [now, setNow] = useState(new Date());
@@ -227,8 +228,12 @@ export default function CalendarPage() {
                         boxShadow: active ? `0 0 0 1px ${block.color}50, 0 4px 12px ${block.color}30` : isHovered ? `0 4px 12px ${block.color}25` : 'none',
                         filter: block.done ? 'grayscale(0.4)' : 'none',
                       }}
-                      onMouseEnter={() => setHoveredBlock(block.id)}
-                      onMouseLeave={() => setHoveredBlock(null)}
+                      onMouseEnter={(e) => {
+                        setHoveredBlock(block.id);
+                        setTooltip({ block, x: e.clientX, y: e.clientY });
+                      }}
+                      onMouseMove={(e) => setTooltip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                      onMouseLeave={() => { setHoveredBlock(null); setTooltip(null); }}
                       onClick={(e) => { e.stopPropagation(); handleBlockClick(block); }}
                     >
                       <div className={`font-medium truncate leading-tight ${block.done ? 'line-through' : ''}`} style={{ fontSize: height < 30 ? 10 : 11 }}>
@@ -241,26 +246,7 @@ export default function CalendarPage() {
                         </div>
                       )}
 
-                      {isHovered && (
-                        <div
-                          className="absolute z-50 rounded-lg px-3 py-2 shadow-2xl border pointer-events-none text-foreground"
-                          style={{
-                            top: height + 4,
-                            left: 0,
-                            minWidth: 160,
-                            borderColor: `${block.color}50`,
-                            background: '#1e2737',
-                          }}
-                        >
-                          <p className="text-xs font-semibold">{block.title}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-                            {fmt24(Math.floor(block.startMin / 60), block.startMin % 60)} · {block.duration}m
-                          </p>
-                          {active && <p className="text-[10px] text-primary mt-0.5 font-medium">▶ In progress</p>}
-                          {block.locked && <p className="text-[10px] text-amber-400 mt-0.5">Locked event</p>}
-                          {block.item?.notes && <p className="text-[10px] text-muted-foreground mt-1">{block.item.notes}</p>}
-                        </div>
-                      )}
+
                     </div>
                   );
                 })}
@@ -286,6 +272,39 @@ export default function CalendarPage() {
       </div>
 
       <AddModal open={editOpen} onOpenChange={setEditOpen} editItem={editItem} />
+
+      {/* Fixed tooltip — fully opaque, no transparency */}
+      {tooltip && (
+        <div
+          className="pointer-events-none"
+          style={{
+            position: 'fixed',
+            left: tooltip.x + 14,
+            top: tooltip.y + 14,
+            zIndex: 9999,
+            background: '#0f1623',
+            border: `1px solid ${tooltip.block.color}`,
+            borderRadius: 10,
+            padding: '8px 12px',
+            minWidth: 160,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.7)',
+          }}
+        >
+          <p style={{ fontSize: 12, fontWeight: 600, color: '#e8eaf0', margin: 0 }}>{tooltip.block.title}</p>
+          <p style={{ fontSize: 10, color: '#8892a4', marginTop: 3, fontFamily: 'monospace' }}>
+            {fmt24(Math.floor(tooltip.block.startMin / 60), tooltip.block.startMin % 60)} · {tooltip.block.duration}m
+          </p>
+          {tooltip.block.type === 'task' && tooltip.block.done && (
+            <p style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>✓ Done</p>
+          )}
+          {tooltip.block.locked && (
+            <p style={{ fontSize: 10, color: '#f59e0b', marginTop: 2 }}>🔒 Locked event</p>
+          )}
+          {tooltip.block.item?.notes && (
+            <p style={{ fontSize: 10, color: '#6b7280', marginTop: 4, maxWidth: 200 }}>{tooltip.block.item.notes}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
