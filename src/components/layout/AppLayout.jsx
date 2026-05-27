@@ -33,6 +33,10 @@ export default function AppLayout() {
     });
   };
 
+  const toggleSidebar = () => {
+    setSidebarMode(prev => prev === 'hidden' ? 'expanded' : prev === 'collapsed' ? 'expanded' : 'collapsed');
+  };
+
   const handleAddClick = () => {
     setAddType('task');
     setAddOpen(true);
@@ -59,7 +63,7 @@ export default function AppLayout() {
         ignoredCount={ignoredCount}
       />
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar mode={sidebarMode} />
+        <Sidebar mode={sidebarMode} onToggle={toggleSidebar} />
         <main className="flex-1 overflow-y-auto pb-8 min-w-0">
           <Outlet />
         </main>
