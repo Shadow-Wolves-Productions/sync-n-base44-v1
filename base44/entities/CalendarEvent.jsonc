@@ -46,6 +46,10 @@
     "raw_start": {
       "type": "string",
       "description": "YYYY-MM-DD string"
+    },
+    "pillar_id": {
+      "type": "string",
+      "description": "Optional pillar association"
     }
   },
   "required": [

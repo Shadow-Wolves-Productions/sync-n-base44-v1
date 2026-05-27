@@ -132,11 +132,12 @@ export function useScheduler() {
       todayStartMin = currentMinute + 15;
     }
 
-    // Get unscheduled active tasks
-    let unscheduled = tasks.filter(t => !t.scheduled && !t.done && !t.archived && t.status === 'active');
+    // Get unscheduled active tasks — skip manually scheduled ones entirely
+    let unscheduled = tasks.filter(t => !t.scheduled && !t.done && !t.archived && t.status === 'active' && !t.manually_scheduled);
 
     if (action === 'resync') {
-      const todayScheduled = tasks.filter(t => t.scheduled && t.day_offset === 0 && !t.done && !t.archived);
+      // Only resync tasks that are NOT manually scheduled
+      const todayScheduled = tasks.filter(t => t.scheduled && t.day_offset === 0 && !t.done && !t.archived && !t.manually_scheduled);
       for (const t of todayScheduled) {
         await updateTask.mutateAsync({ id: t.id, data: { scheduled: false, day_offset: null, start_hour: null, start_min: null } });
       }

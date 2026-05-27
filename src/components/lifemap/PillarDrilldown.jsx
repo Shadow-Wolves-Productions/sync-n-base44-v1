@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useTasks, useTaskMutations, usePillarMutations } from '@/lib/useSyncnData';
+import { useTasks, useTaskMutations, usePillarMutations, useCalendarEvents, useReminders } from '@/lib/useSyncnData';
 import { PRIORITY_COLORS } from '@/lib/syncn';
-import { ChevronLeft, Plus, Pencil, FolderOpen } from 'lucide-react';
+import { ChevronLeft, Plus, Pencil, FolderOpen, Calendar, Bell } from 'lucide-react';
 import AddModal from '@/components/modals/AddModal';
 import ProjectCard from './ProjectCard';
 
@@ -16,12 +16,23 @@ const STATUS_FILTERS = [
   { key: 'done', label: '✓ Done' },
 ];
 
+const TYPE_FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'tasks', label: '📋 Tasks' },
+  { key: 'events', label: '📅 Events' },
+  { key: 'meetings', label: '🤝 Meetings' },
+  { key: 'reminders', label: '🔔 Reminders' },
+];
+
 export default function PillarDrilldown({ pillar, initialSubPillar = null, onBack }) {
   const { data: tasks } = useTasks();
+  const { data: events } = useCalendarEvents();
+  const { data: reminders } = useReminders();
   const { update: updateTask } = useTaskMutations();
   const { update: updatePillar } = usePillarMutations();
   const [selectedSubPillar, setSelectedSubPillar] = useState(initialSubPillar);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [editItem, setEditItem] = useState(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editingSubName, setEditingSubName] = useState('');
@@ -30,6 +41,8 @@ export default function PillarDrilldown({ pillar, initialSubPillar = null, onBac
   const [newSubName, setNewSubName] = useState('');
 
   const pillarTasks = tasks.filter(t => t.pillar_id === pillar.id && !t.archived);
+  const pillarEvents = events.filter(e => e.pillar_id === pillar.id && !e.ignored);
+  const pillarReminders = reminders.filter(r => r.pillar_id === pillar.id);
 
   // Tasks for the current view
   const viewTasks = selectedSubPillar
@@ -215,6 +228,41 @@ export default function PillarDrilldown({ pillar, initialSubPillar = null, onBac
           )}
         </div>
       </div>
+
+      {/* Events & Meetings for this pillar */}
+      {pillarEvents.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Events & Meetings</p>
+          <div className="space-y-1">
+            {pillarEvents.map(ev => (
+              <div key={ev.id}
+                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                onClick={() => { setEditItem({ ...ev, _type: ev.attendees !== undefined ? 'meeting' : 'event' }); setEditOpen(true); }}>
+                <Calendar className="w-3.5 h-3.5 shrink-0 text-[#00b4d8]" />
+                <span className="text-sm flex-1 truncate">{ev.title}</span>
+                {ev.duration_mins && <span className="text-xs text-muted-foreground font-mono">{ev.duration_mins}m</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reminders for this pillar */}
+      {pillarReminders.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">Reminders</p>
+          <div className="space-y-1">
+            {pillarReminders.map(r => (
+              <div key={r.id}
+                className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                onClick={() => { setEditItem({ ...r, _type: 'reminder' }); setEditOpen(true); }}>
+                <Bell className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                <span className="text-sm flex-1 truncate">{r.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Unassigned tasks */}
       {unassignedCount > 0 && (

@@ -58,6 +58,10 @@
       "items": {
         "type": "string"
       }
+    },
+    "pillar_id": {
+      "type": "string",
+      "description": "Optional pillar association"
     }
   },
   "required": [

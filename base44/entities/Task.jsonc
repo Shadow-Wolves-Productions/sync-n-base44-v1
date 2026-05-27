@@ -43,6 +43,11 @@
       "type": "boolean",
       "default": false
     },
+    "manually_scheduled": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, AI scheduler will never touch this task's time"
+    },
     "day_offset": {
       "type": "number"
     },

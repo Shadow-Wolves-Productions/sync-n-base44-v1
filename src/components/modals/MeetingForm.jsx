@@ -4,13 +4,14 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { useCalendarEventMutations } from '@/lib/useSyncnData';
+import { useCalendarEventMutations, usePillars } from '@/lib/useSyncnData';
 import DayPicker from './DayPicker';
 import RecurringFields from './RecurringFields';
 import { Trash2 } from 'lucide-react';
 
 export default function MeetingForm({ editItem, onDone }) {
   const { create, update, remove } = useCalendarEventMutations();
+  const { data: pillars } = usePillars();
 
   const [form, setForm] = useState({
     title: editItem?.title || '',
@@ -22,6 +23,7 @@ export default function MeetingForm({ editItem, onDone }) {
     attendees: editItem?.attendees || '',
     notes: editItem?.notes || '',
     cal_type: editItem?.cal_type || 'manual',
+    pillar_id: editItem?.pillar_id || '',
   });
 
   const set = (field, val) => setForm(f => ({ ...f, [field]: val }));
@@ -79,6 +81,28 @@ export default function MeetingForm({ editItem, onDone }) {
           <Input type="number" value={form.duration_mins} onChange={e => set('duration_mins', Number(e.target.value))} min={15} step={15} className="h-9" />
         </div>
       </div>
+
+      {/* Pillar association */}
+      {pillars.length > 0 && (
+        <div className="space-y-1.5">
+          <Label>Pillar (optional)</Label>
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => set('pillar_id', '')}
+              className={`px-2.5 py-1 rounded-full text-xs border transition-all ${!form.pillar_id ? 'bg-muted border-border text-foreground' : 'border-border/50 text-muted-foreground hover:bg-muted/50'}`}>
+              None
+            </button>
+            {pillars.map(p => (
+              <button key={p.id} type="button" onClick={() => set('pillar_id', form.pillar_id === p.id ? '' : p.id)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-all"
+                style={form.pillar_id === p.id
+                  ? { borderColor: p.color + '70', backgroundColor: p.color + '20', color: p.color }
+                  : { borderColor: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }}>
+                {p.icon} {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <Label>Location / Link</Label>

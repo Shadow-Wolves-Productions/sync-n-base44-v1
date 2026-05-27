@@ -31,6 +31,7 @@ export default function TaskForm({ editItem, onDone }) {
     recurring_start_min: editItem?.recurring_start_min || 0,
     recurring_end_date: editItem?.recurring_end_date || '',
     scheduled: editItem?.scheduled || false,
+    manually_scheduled: editItem?.manually_scheduled || false,
     day_offset: editItem?.day_offset ?? null,
     start_hour: editItem?.start_hour ?? 9,
     start_min: editItem?.start_min ?? 0,
@@ -206,6 +207,13 @@ export default function TaskForm({ editItem, onDone }) {
                   setForm(f => ({ ...f, start_hour: h, start_min: m }));
                 }}
               />
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-xs">Lock from AI scheduling</Label>
+                <p className="text-[10px] text-muted-foreground">AI won't move or reschedule this</p>
+              </div>
+              <Switch checked={form.manually_scheduled} onCheckedChange={v => set('manually_scheduled', v)} />
             </div>
           </div>
         )}
