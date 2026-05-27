@@ -17,13 +17,17 @@ export default function LifeMap() {
   const [editOpen, setEditOpen] = useState(false);
 
   // Handle navigation from sidebar (?pillar=xxx&sub=yyy)
+  // Re-run whenever the full search string changes (including same-page navigation)
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const pillarParam = params.get('pillar');
     const subParam = params.get('sub');
     if (pillarParam) {
       setSelectedPillarId(pillarParam);
-      setSelectedSubPillar(subParam || null);
+      setSelectedSubPillar(subParam ? decodeURIComponent(subParam) : null);
+    } else {
+      setSelectedPillarId(null);
+      setSelectedSubPillar(null);
     }
   }, [location.search]);
 

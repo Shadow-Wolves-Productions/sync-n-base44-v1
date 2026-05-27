@@ -160,7 +160,7 @@ ${pillars.map(p => `${p.id}: ${p.label}`).join('\n')}`;
           className="gap-2 text-xs"
         >
           {briefingLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          Daily read
+          Check In
         </Button>
       </div>
 

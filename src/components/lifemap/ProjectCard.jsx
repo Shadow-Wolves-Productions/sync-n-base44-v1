@@ -35,10 +35,11 @@ export default function ProjectCard({ name, tasks, pillarColor, onClick, onRenam
   return (
     <div
       onClick={onClick}
-      className="relative group rounded-2xl border border-border/40 bg-card hover:border-border/70 hover:shadow-sm transition-all duration-150 cursor-pointer p-4"
+      className="group rounded-2xl border border-border/40 bg-card hover:border-border/70 hover:shadow-sm transition-all duration-150 cursor-pointer overflow-hidden"
     >
-      {/* Color accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl opacity-60" style={{ backgroundColor: pillarColor }} />
+      {/* Color accent bar — flush with card edges via overflow-hidden */}
+      <div className="h-0.5 w-full opacity-70" style={{ backgroundColor: pillarColor }} />
+      <div className="p-4">
 
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -90,6 +91,7 @@ export default function ProjectCard({ name, tasks, pillarColor, onClick, onRenam
           <p className="text-[10px] text-muted-foreground/50">{progress}% done · {total} total</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

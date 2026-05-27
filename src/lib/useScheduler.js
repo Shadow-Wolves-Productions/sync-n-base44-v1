@@ -10,55 +10,50 @@ export function useScheduler() {
   const { update: updateTask } = useTaskMutations();
   const { toast } = useToast();
 
-  // Build minute-accurate timeline for a given day_offset
+  // Build a mutable in-memory timeline for a day (used during a scheduling run)
   function buildTimeline(dayOffset) {
     const occupied = [];
 
-    // Calendar events with 15min buffers before & after
+    // Calendar events — 10min buffer each side
     events.filter(e => e.day_offset === dayOffset && !e.ignored).forEach(e => {
       const startMin = (e.start_hour || 0) * 60 + (e.start_min || 0);
       const duration = e.duration_mins || 60;
-      occupied.push({ start: startMin - 15, end: startMin + duration + 15, type: 'event' });
+      occupied.push({ start: Math.max(0, startMin - 10), end: startMin + duration + 10 });
     });
 
-    // Reminders with block_time
+    // Blocking reminders
     reminders.filter(r => r.block_time && r.day_offset === dayOffset).forEach(r => {
       const startMin = (r.start_hour || 0) * 60 + (r.start_min || 0);
-      const duration = r.duration_mins || 30;
-      occupied.push({ start: startMin, end: startMin + duration + 15, type: 'reminder' });
+      occupied.push({ start: startMin, end: startMin + (r.duration_mins || 30) + 10 });
     });
 
-    // Already scheduled tasks with 15min buffer after
+    // Already-scheduled tasks (not done)
     tasks.filter(t => t.scheduled && t.day_offset === dayOffset && !t.done && !t.archived).forEach(t => {
       const startMin = (t.start_hour || 0) * 60 + (t.start_min || 0);
-      const duration = t.duration_mins || 30;
-      occupied.push({ start: startMin, end: startMin + duration + 15, type: 'task' });
+      occupied.push({ start: startMin, end: startMin + (t.duration_mins || 30) + 10 });
     });
 
     return occupied.sort((a, b) => a.start - b.start);
   }
 
-  // Find next free slot of given duration on a day
-  function findFreeSlot(dayOffset, durationMins, startFromMin = 0, timeline = null) {
-    const tl = timeline || buildTimeline(dayOffset);
-    const endOfDay = 20 * 60; // 8pm
+  // Find next free slot — uses a live array so newly placed tasks block future ones
+  function findFreeSlot(durationMins, startFromMin, liveTimeline) {
+    const endOfDay = 20 * 60; // 8pm hard stop
 
     for (let candidate = startFromMin; candidate + durationMins <= endOfDay; candidate += 15) {
       const candidateEnd = candidate + durationMins;
-      const conflict = tl.some(slot => candidate < slot.end && candidateEnd > slot.start);
+      const conflict = liveTimeline.some(slot => candidate < slot.end && candidateEnd > slot.start);
       if (!conflict) return candidate;
     }
-    return null; // no slot
+    return null;
   }
 
-  // Get energy level for a time
   function getEnergyLevel(hour) {
     if (!settings?.energy_rhythm) return 'medium';
     const period = getEnergyPeriod(hour);
     return settings.energy_rhythm[period] || 'medium';
   }
 
-  // Score a task for scheduling priority
   function scoreTask(task) {
     let score = 0;
     if (task.priority === 'High') score += 100;
@@ -75,48 +70,46 @@ export function useScheduler() {
     return score;
   }
 
-  // Main scheduling function
   async function runSchedule(action) {
     const now = new Date();
     const currentMinute = now.getHours() * 60 + now.getMinutes();
-    
+
     let targetDays = [];
-    let startMin = 6 * 60; // 6am default
+    let todayStartMin = 6 * 60;
 
     if (action === 'schedule-remaining') {
       targetDays = [0];
-      startMin = currentMinute + 15;
+      todayStartMin = currentMinute + 15;
     } else if (action === 'resync') {
       targetDays = [0];
-      startMin = currentMinute + 15;
+      todayStartMin = currentMinute + 15;
     } else if (action === 'plan-tomorrow') {
       targetDays = [1];
     } else if (action === 'plan-week') {
-      targetDays = [0, 1, 2, 3, 4, 5, 6];
-      if (now.getHours() >= 20) targetDays = [1, 2, 3, 4, 5, 6, 7];
+      targetDays = now.getHours() >= 20 ? [1, 2, 3, 4, 5, 6, 7] : [0, 1, 2, 3, 4, 5, 6];
+      todayStartMin = currentMinute + 15;
     }
 
     // Get unscheduled active tasks
-    let unscheduled = tasks.filter(t => 
-      !t.scheduled && !t.done && !t.archived && t.status === 'active'
-    );
+    let unscheduled = tasks.filter(t => !t.scheduled && !t.done && !t.archived && t.status === 'active');
 
     if (action === 'resync') {
-      // Also include scheduled-but-not-done tasks for today
-      const todayScheduled = tasks.filter(t => 
-        t.scheduled && t.day_offset === 0 && !t.done && !t.archived
-      );
-      // Unschedule them first
+      const todayScheduled = tasks.filter(t => t.scheduled && t.day_offset === 0 && !t.done && !t.archived);
       for (const t of todayScheduled) {
         await updateTask.mutateAsync({ id: t.id, data: { scheduled: false, day_offset: null, start_hour: null, start_min: null } });
       }
       unscheduled = [...unscheduled, ...todayScheduled];
     }
 
-    // Sort by score
     unscheduled.sort((a, b) => scoreTask(b) - scoreTask(a));
 
-    // Cap at 4 hours per day
+    // Live timelines per day — mutated as tasks are placed so no two tasks collide
+    const liveTimelines = {};
+    for (const day of targetDays) {
+      liveTimelines[day] = buildTimeline(day);
+    }
+
+    // Per-day minute caps (4h per day max)
     const dayMinutesUsed = {};
     const MAX_PER_DAY = 240;
 
@@ -130,26 +123,29 @@ export function useScheduler() {
         if (!dayMinutesUsed[dayOff]) dayMinutesUsed[dayOff] = 0;
         if (dayMinutesUsed[dayOff] + duration > MAX_PER_DAY) continue;
 
-        const dayStart = dayOff === 0 ? Math.max(startMin, 6 * 60) : 6 * 60;
-        const timeline = buildTimeline(dayOff);
-        const slot = findFreeSlot(dayOff, duration, dayStart, timeline);
+        const dayStart = dayOff === 0 ? Math.max(todayStartMin, 6 * 60) : 6 * 60;
+        const slot = findFreeSlot(duration, dayStart, liveTimelines[dayOff]);
 
         if (slot !== null) {
           const hour = Math.floor(slot / 60);
           const min = slot % 60;
 
-          // Energy matching: prefer placing high-priority in peak energy
+          // For high-priority tasks, skip low-energy slots if there are more days
           const energy = getEnergyLevel(hour);
-          if (task.priority === 'High' && (energy === 'low') && dayOff < 6) {
-            // Try next day for better energy match
-            continue;
-          }
+          const hasMoreDays = targetDays.indexOf(dayOff) < targetDays.length - 1;
+          if (task.priority === 'High' && energy === 'low' && hasMoreDays) continue;
 
+          // Commit: save to DB
           await updateTask.mutateAsync({
             id: task.id,
             data: { scheduled: true, day_offset: dayOff, start_hour: hour, start_min: min }
           });
-          dayMinutesUsed[dayOff] += duration + 15;
+
+          // Immediately add to live timeline so the next task can't use this slot
+          liveTimelines[dayOff].push({ start: slot, end: slot + duration + 10 });
+          liveTimelines[dayOff].sort((a, b) => a.start - b.start);
+
+          dayMinutesUsed[dayOff] += duration + 10;
           scheduledCount++;
           placed = true;
           break;
