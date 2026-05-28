@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { format, addDays } from 'date-fns';
 import { useTasks, useTaskMutations, usePillars, useCalendarEvents, useSeedPillars } from '@/lib/useSyncnData';
+import { useScheduler } from '@/lib/useScheduler';
 import { getGreeting, getCurrentPeriod, getPeriodForHour, sortByTime, offsetToDate, recurringOccursOnDate } from '@/lib/syncn';
 import PeriodAccordion from '@/components/today/PeriodAccordion';
 import ReminderStrip from '@/components/today/ReminderStrip';
@@ -11,6 +12,7 @@ import AddModal from '@/components/modals/AddModal';
 import NextBestMove from '@/components/today/NextBestMove';
 import PillarTimeStrip from '@/components/today/PillarTimeStrip';
 import QuickAddBar from '@/components/today/QuickAddBar';
+import MissedTasksBanner from '@/components/today/MissedTasksBanner';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Today() {
@@ -18,6 +20,7 @@ export default function Today() {
   const { data: pillars } = usePillars();
   const { data: events } = useCalendarEvents();
   const { update: updateTask } = useTaskMutations();
+  const { checkMissedTasks } = useScheduler();
   const seedPillars = useSeedPillars();
   const [viewMode, setViewMode] = useState('day');
   const [openPeriod, setOpenPeriod] = useState(getCurrentPeriod());
@@ -28,6 +31,13 @@ export default function Today() {
   useEffect(() => {
     if (pillars && pillars.length === 0) seedPillars();
   }, [pillars?.length]);
+
+  // Check for missed tasks every 2 minutes
+  useEffect(() => {
+    checkMissedTasks();
+    const interval = setInterval(checkMissedTasks, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [tasks?.length]);
 
   const today = new Date();
 
@@ -77,6 +87,9 @@ export default function Today() {
       data: {
         done: checked,
         done_at: checked ? new Date().toISOString() : null,
+        // Only mark completed when user manually checks — never auto-complete
+        status: checked ? 'completed' : 'active',
+        missed_at: checked ? null : undefined,
       }
     });
   };
@@ -92,13 +105,15 @@ export default function Today() {
   };
 
   // Stats
-  const urgentCount = tasks.filter(t => t.priority === 'High' && !t.done && !t.archived && t.status === 'active').length;
-  const scheduledToday = tasks.filter(t => t.scheduled && t.day_offset === 0 && !t.archived).length;
+  const missedCount = tasks.filter(t => t.status === 'missed' && !t.done && !t.archived).length;
+  const urgentCount = tasks.filter(t => t.priority === 'High' && !t.done && !t.archived && (t.status === 'active' || t.status === 'scheduled')).length;
+  const scheduledToday = tasks.filter(t => t.scheduled && t.day_offset === 0 && !t.archived && t.status !== 'completed').length;
   const eventsToday = events.filter(e => e.day_offset === 0 && !e.ignored).length;
 
-  // Unscheduled urgent tasks
+  // Unscheduled urgent tasks (exclude missed — those show in banner)
   const unscheduledUrgent = tasks.filter(t =>
-    t.priority === 'High' && !t.scheduled && !t.done && !t.archived && t.status === 'active'
+    t.priority === 'High' && !t.scheduled && !t.done && !t.archived &&
+    t.status === 'active' && !t.manually_scheduled
   );
 
   return (
@@ -111,7 +126,8 @@ export default function Today() {
             <p className="text-xs text-muted-foreground mb-1">{getGreeting()}</p>
             <h1 className="text-2xl font-semibold">{format(today, 'EEEE, MMMM d')}</h1>
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-              {urgentCount > 0 && <span className="text-red-400 font-medium">{urgentCount} urgent</span>}
+              {missedCount > 0 && <span className="text-red-400 font-medium">{missedCount} missed</span>}
+              {urgentCount > 0 && <span className="text-amber-400 font-medium">{urgentCount} urgent</span>}
               <span>{scheduledToday} scheduled</span>
               <span>{eventsToday} events</span>
             </div>
@@ -145,6 +161,9 @@ export default function Today() {
 
           {viewMode === 'day' && (
             <>
+              {/* Missed tasks banner — appears above schedule */}
+              <MissedTasksBanner pillars={pillars} onItemClick={handleItemClick} />
+
               <div className="space-y-1">
                 {['morning', 'afternoon', 'evening'].map(period => (
                   <PeriodAccordion

@@ -25,7 +25,12 @@
       "enum": [
         "active",
         "upcoming",
-        "parked"
+        "parked",
+        "scheduled",
+        "in_progress",
+        "missed",
+        "completed",
+        "skipped"
       ],
       "default": "active"
     },
@@ -110,6 +115,10 @@
     },
     "archived_at": {
       "type": "string"
+    },
+    "missed_at": {
+      "type": "string",
+      "description": "ISO timestamp when task was detected as missed"
     }
   },
   "required": [
