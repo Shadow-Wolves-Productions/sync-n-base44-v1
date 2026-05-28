@@ -280,6 +280,9 @@ export function useScheduler() {
     let scheduledCount = 0;
     let pushedTomorrow = 0;
 
+    // Build tomorrow's timeline once, outside the loop, so it stays updated
+    const tomorrowTimeline = buildTimeline(1);
+
     for (const task of dedupedQueue) {
       const duration = task.duration_mins || 30;
 
@@ -302,8 +305,7 @@ export function useScheduler() {
         liveTimeline.sort((a, b) => a.start - b.start);
         scheduledCount++;
       } else {
-        // Try tomorrow
-        const tomorrowTimeline = buildTimeline(1);
+        // Try tomorrow (reuse the single shared tomorrow timeline)
         const slotTomorrow = findFreeSlot(duration, DAY_START, tomorrowTimeline);
 
         if (slotTomorrow !== null) {
@@ -318,6 +320,9 @@ export function useScheduler() {
               missed_at: null,
             }
           });
+          // Update tomorrow's timeline so the next task sees the occupied slot
+          tomorrowTimeline.push({ start: slotTomorrow, end: slotTomorrow + duration + BUFFER, label: task.title, locked: false });
+          tomorrowTimeline.sort((a, b) => a.start - b.start);
           pushedTomorrow++;
         } else {
           // Leave unscheduled
